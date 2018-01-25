@@ -1,6 +1,5 @@
 ---
-layout: default
 title: CodeSandwich
 ---
-# Hello
-world
+# Hello world
+Code sandwich
