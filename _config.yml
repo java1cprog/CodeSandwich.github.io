@@ -1,2 +1,4 @@
 name: CodeSandwich
 markdown: kramdown
+
+theme: jekyll-theme-minimal
