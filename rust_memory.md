@@ -41,15 +41,23 @@ Memory is released twice. Memory might be given back to the OS and it will termi
 The heap management problem is very old and programmers invented many tools to mitigate it. There are two main ways, both proven useful, but each of them severely flawed.
 
 ## Garbage collector
-This is the easy way. The program gets special mechanism detecting moment, from which given memory chunk will never be used, so it can be safely released. This prevents leaking, using after freeing and double freeing. The easiest method of proving that memory will never be used again is proving that it's not reachable. Memory is said to be reachable when program can obtain its address without guessing. It means that it's stored somewhere on stack, in a static variable or in structure on heap, which itself is reachable.
+This is the easy way. The program gets special mechanism detecting moment, from which given memory chunk will never be used, so it can be safely released. This prevents leaking, using after freeing and double freeing. The easiest method of proving that memory will never be used again is proving that it's not reachable. Memory is said to be reachable when program can obtain its address without guessing. It means that it's stored somewhere on stack, in a static variable or in place on heap, which itself is reachable.
 
 //PICTURE OF REACHABILITY
 
-There are numerous smart strategies of checking reachability, but they all generate a significant overhead. For example reference counters increase memory usage and add overhead for each heap access. As another example tracing garbage collectors introduce heavy memory reachability analysis, which can either be constantly running in background or it can  completely stop program execution for clean-up. No matter what, garbage collectors slow down applications and increase their memory usage.
+There are numerous smart strategies of checking reachability, but they all generate a significant overhead. For example reference counters increase memory usage and add overhead for each heap access. On the other hand tracing garbage collectors allow free access, but introduce heavy memory reachability analysis, which can either be constantly running in background or it can  completely stop program execution for clean-up. No matter what, garbage collectors add extra work for applications and increase their memory usage.
 
-//TODO
+## Ownership and lifetime discipline
+So garbage collector is a good, but heavy solution. But what can be done when its cost is unbearable or there is just no possibility of using it? Programmers have invented a special discipline, which closely followed makes proper memory management much easier. It's based on the rules of ownership and lifetimes.
+ 
+### Ownership
+Ownership is an idea, that there can be many pointers to allocated memory, but only one of them is considered owning. When it's destroyed, it should be used to release the allocation. Non-owning pointers can be created and destroyed in any number, but they should never be used to deallocate. This makes memory management much clearer, because there is only one important pointer to follow and release. It also solves two of three heap problems: leaking and double free. The ownership may be a soft agreement in API and program flow, but some languages and libraries provide tools making execution of this policy more explicit and less error-prone. For example raw C has no such tools, but modern C++ provides built-in smart pointers, which explicitly represent owned pointers and implement proper behavior like deallocation on destruction.
 
-## No memory management + ownership + lifetimes
+### Lifetimes
+Lifetime is a span of time during program execution, when particular piece of data is valid to be used. It's a critical property when dealing with heap allocated memory pointers, which are not owning. They are safe to use as long as the owning pointer doesn't release. After that it's an error to use them, so their lifetimes are over. It's also worth noting, that any structure containing pointer with given lifetime should be considered having lifetime no longer than pointer's. This is not an easy discipline to execute, but it prevents the third heap memory problem: use after free. This complements ownership's guarantees making program fully memory safe without garbage collector overhead.
+
+//PICTURE OF LIFETIMES
+
 //TODO
 # And here comes Rust
 //TODO
