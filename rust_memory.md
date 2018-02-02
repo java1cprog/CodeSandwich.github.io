@@ -58,10 +58,11 @@ Lifetime is a span of time during program execution, when particular piece of da
 
 //PICTURE OF LIFETIMES
 
-//TODO
-# And here comes Rust
-//TODO
+# Rust
+Rust is sometimes described as a hybrid solution. In theory all it does is enforcing the ownership and lifetimes discipline in code, but in practice working with Rust is so safe and carefree, that it resembles garbage collected language. Compiler statically verifies, that program is memory safe and if it fails to do so, it generates an error pointing out potential risks. If it passes, the code is guaranteed to never cause memory corruption. The process has no influence on final binary, it's as lightweight as if it was written in pure C or C++.
+
 ## Ownership as part of grammar
+
 //TODO
 ### Borrowing
 //TODO
