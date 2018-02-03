@@ -47,27 +47,48 @@ This is the easy way. The program gets special mechanism detecting moment, from 
 
 There are numerous smart strategies of checking reachability, but they all generate a significant overhead. For example reference counters increase memory usage and add overhead for each heap access. On the other hand tracing garbage collectors allow free access, but introduce heavy memory reachability analysis, which can either be constantly running in background or it can  completely stop program execution for clean-up. No matter what, garbage collectors add extra work for applications and increase their memory usage.
 
-## Ownership and lifetime discipline
+## Strict disciplines
 So garbage collector is a good, but heavy solution. But what can be done when its cost is unbearable or there is just no possibility of using it? Programmers have invented a special discipline, which closely followed makes proper memory management much easier. It's based on the rules of ownership and lifetimes.
  
-### Ownership
+### Ownership discipline
 Ownership is an idea, that there can be many pointers to allocated memory, but only one of them is considered owning. When it's destroyed, it should be used to release the allocation. Non-owning pointers can be created and destroyed in any number, but they should never be used to deallocate. This makes memory management much clearer, because there is only one important pointer to follow and release. It also solves two of three heap problems: leaking and double free. The ownership may be a soft agreement in API and program flow, but some languages and libraries provide tools making execution of this policy more explicit and less error-prone. For example raw C has no such tools, but modern C++ provides built-in smart pointers, which explicitly represent owned pointers and implement proper behavior like deallocation on destruction.
 
-### Lifetimes
+### Lifetimes discipline
 Lifetime is a span of time during program execution, when particular piece of data is valid to be used. It's a critical property when dealing with heap allocated memory pointers, which are not owning. They are safe to use as long as the owning pointer doesn't release. After that it's an error to use them, so their lifetimes are over. It's also worth noting, that any structure containing pointer with given lifetime should be considered having lifetime no longer than pointer's. This is not an easy discipline to execute, but it prevents the third heap memory problem: use after free. This complements ownership's guarantees making program fully memory safe without garbage collector overhead.
 
 //PICTURE OF LIFETIMES
 
 # Rust
-Rust is sometimes described as a hybrid solution. In theory all it does is enforcing the ownership and lifetimes discipline in code, but in practice working with Rust is so safe and carefree, that it resembles garbage collected language. Compiler statically verifies, that program is memory safe and if it fails to do so, it generates an error pointing out potential risks. If it passes, the code is guaranteed to never cause memory corruption. The process has no influence on final binary, it's as lightweight as if it was written in pure C or C++.
+Rust is sometimes described as a hybrid solution. Actually all it does is enforcing the ownership and lifetimes discipline in code, but the result is that working with Rust is so safe and carefree, that it resembles garbage collected language. Compiler statically verifies, that program is memory safe and if it fails to do so, it generates an error pointing out potential risks. When it passes, the code is guaranteed to never cause memory corruption. Because it all happens BEFORE building the output binary, the process has no influence on it, it's as lightweight as if it was written in pure C or C++.
 
-## Ownership as part of grammar
+## Ownership
+Rust has very strict notion of ownership. Every allocated piece of memory is owned by single instance of some structure. The structure could be anything, but usually they end up being some kind of collections or boxes (Rust's smart pointers) from the standard library. These wrappers are responsible for deallocating memory, when they are destroyed. There is no easy way to explicitly allocate memory and get a raw pointer without any responsible wrapper.
 
-//TODO
-### Borrowing
+//PICTURE OF MEMORY OWNERSHIP
+
+### Recursive destruction
+Ownership is recursive, so if one structure stores another by value, it gains ownership of the latter and all of its sub-structures. This also means, that when container is destroyed, it must recursively destroy all its content. Rust does it out of the box. All structures have defined destructor, which iterates through all fields and destroys them first. Structure author can add own steps during destruction, for example close DB connection when writing client, but fields still will be destroyed one by one after that. The default behavior is just right in vast majority of cases, so structures rarely have destructors defined and no mater if they do or don't, they are all safe from leaking memory.
+
+//PICTURE OF RECURSIVE DROP
+
+### Tying heap with stack
+Rust's ownership model brings a powerful feature: complex heap management is reduced to simple stack management. Programmer doesn't have to worry about allocating and releasing, it's all reduced to working with local variables. Even if structures are deeply nested with many steps of references to heap memory, there always is a single root structure on stack, which will be automatically destroyed when program stops caring about it.
+
+//PICTURE OF COMPLEX STRUCTURES
+
+## Lifetimes
+Unfortunately it's not convenient to write programs, where accessing data requires owning it. Rust has normal, not smart references, which make this possible. When such reference is created, it's said, that the value is borrowed. 
+
+
 //TODO
 ## Lifetimes as part of grammar
 //TODO
+
+### Isn't this too restrictive?
+It can be done, but it's hard, dangerous and rarely needed, usually when creating a custom wrapper like a new kind of a low-level collection with special memory handling.
+
+This behavior can be overriden, but again, it's usually only needed when building low level custom memory management.
+
 ## Are stack and static lifetimes enough?
 //TODO
 ### Usually yes
