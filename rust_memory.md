@@ -5,7 +5,7 @@ title: Rust memory management - CodeSandwich
 Rust is a young programming language bringing new quality to code. You might have heard about it being fast, secure or easy to implement concurrency with. This introduction is focused on the most important, core feature of Rust: memory management. This system is the main language innovation and most of its unique features are direct consequences of this design.
 
 ## Who is this text for and what are the goals
-This text is written for people, who are programmers, but don't know Rust or are at the very beginning of learning it. It's easier to understand for readers who know C, C++ or other language with manually managed memory as well as some with garbage collector. It's a high-level introduction intended to present core Rust concepts and encourage further learning. It's not a tutorial, there is no `Hello Rust` in the end.
+This text is written for people, who are programmers, but don't know Rust or are at the very beginning of learning it. It's easier to understand for readers who know C, C++ or other language with manually managed memory as well as some with garbage collector. It's a high-level introduction intended to present core Rust concepts and encourage further learning. It's not a tutorial, there is no syntax description and most certainly there is no `Hello Rust` in the end
 
 # Memory management
 Modern applications manage their own memory in two main ways: as a stack and as a heap. This may not apply to simpler platforms like embedded systems, but for now let's not focus on them.
@@ -15,12 +15,12 @@ The stack is expanded and shrinked automatically as program enters and exits cer
 
 ```
 main {
-    A = 1       <= create A
+    A = 1       // create A
     loop {
-        B = A   <= create B 
-                <= delete B
+        B = A   // create B 
+                // delete B
     }
-                <= delete A
+                // delete A
 }
 ```
 
@@ -31,10 +31,10 @@ The memory FIRST must be acquired, THEN used and THEN released exactly ONCE. Thi
 
 ```
 main {
-    A = allocate()  <= acquire
-    do_stuff(A)     <= use
-    release(A)      <= release
-                    <= delete pointer
+    A = allocate()  // acquire
+    do_stuff(A)     // use
+    release(A)      // release
+                    // delete pointer
 }
 ```
 
@@ -43,10 +43,10 @@ Memory is never released. It becomes a dead weight making application use more r
 
 ```
 main {
-    A = allocate()  <= acquire
-    do_stuff(A)     <= use
-                    <= <!> never release
-                    <= delete pointer
+    A = allocate()  // acquire
+    do_stuff(A)     // use
+                    // <RUN TIME FAIL> never release
+                    // delete pointer
 }
 ```
 
@@ -55,10 +55,10 @@ Memory is released, but program still tries to use it. If it was given back to t
 
 ```
 main {
-    A = allocate()  <= acquire
-    release(A)      <= release
-    do_stuff(A)     <= <!> use invalid pointer
-                    <= delete pointer
+    A = allocate()  // acquire
+    release(A)      // release
+    do_stuff(A)     // <RUN TIME FAIL> use invalid pointer
+                    // delete pointer
 }
 ```
 
@@ -67,11 +67,11 @@ Memory is released twice. Memory might be given back to the OS and it will termi
 
 ```
 main {
-    A = allocate()  <= acquire
-    do_stuff(A)     <= use
-    release(A)      <= release
-    release(A)      <= <!> release invalid pointer
-                    <= delete pointer
+    A = allocate()  // acquire
+    do_stuff(A)     // use
+    release(A)      // release
+    release(A)      // <RUN TIME FAIL> release invalid pointer
+                    // delete pointer
 }
 ```
 
@@ -81,12 +81,10 @@ The heap management problem is very old and programmers invented many tools to m
 ## Garbage collector
 This is the easy way. The program gets special mechanism detecting moment, from which given memory chunk will never be used, so it can be safely released. This prevents leaking, using after freeing and double freeing. The easiest method of proving that memory will never be used again is proving that it's not reachable. Memory is said to be reachable when program can obtain its address without guessing. It means that it's stored somewhere on stack, in a static variable or in place on heap, which itself is reachable.
 
-//PICTURE OF REACHABILITY
 ```
 STACK   
 main {
     A = allocate()  -> A
-    B = allocate()  -> B
 }
 HEAP
 A -> {              <= reachable
@@ -94,21 +92,17 @@ A -> {              <= reachable
     AB = allocate()
 }
 
-B -> {              <= reachable
-    BA = 2
-}
-
 AB -> {             <= reachable
     ABA = 3
 }
 
 -> {                <= unreachable
-    CA = 4
-    CB = allocate
+    BA = 4
+    BB = allocate
 }
 
-CB -> {             <= unreachable
-    CBA = 4
+BB -> {             <= unreachable
+    BBA = 4
 }
 ```
 
@@ -122,16 +116,16 @@ Ownership is an idea, that there can be many pointers to allocated memory, but o
 
 ```
 main {
-    A = allocate()  <= acquire
-    do_stuff(A)     <= use
-    release(A)      <= release, it owns allocation
-                    <= delete pointer
+    A = allocate()      // acquire
+    do_stuff(A)         // use
+    release(A)          // release, pointer owns allocation
+                        // delete pointer
 }
 
 do_stuff(B) {
     do_more_stuff(B)
-                    <= do not release, it does not own allocation
-                    <= delete pointer
+                        // do not release, pointer does not own allocation
+                        // delete pointer
 }
 ```
 
@@ -140,14 +134,13 @@ Lifetime is a span of time during program execution, when particular piece of da
 
 ```
 main {
-    A = allocate()  <= A's lifetime begins
-    do_stuff(A)     <= use A
-    B = A           <= B's lifetime begins
-    do_stuff(B)     <= use B
-    release(A)      <= release, A's and B's lifetimes end
-    do_stuff(A)     <= <!> use A after its lifetime ended
-    do_stuff(B)     <= <!> use B after its lifetime ended
-                    <= delete A and B
+    A = allocate()  // A's lifetime begins
+    do_stuff(A)     // use A
+    B = A           // B's lifetime begins
+    do_stuff(B)     // use B
+    release(A)      // release, A's and B's lifetimes end
+    do_stuff(A)     // <RUN TIME FAIL> use A after its lifetime ended
+    do_stuff(B)     // <RUN TIME FAIL> use B after its lifetime ended
 }
 ```
 
@@ -157,27 +150,75 @@ Rust is sometimes described as a hybrid solution. Actually all it does is enforc
 ## Ownership
 Rust has very strict notion of ownership. Every allocated piece of memory is owned by single instance of some structure. The structure could be anything, but usually they end up being some kind of collections or boxes (Rust's smart pointers) from the standard library. These wrappers are responsible for deallocating memory, when they are destroyed. There is no easy way to explicitly allocate memory and get a raw pointer without any responsible wrapper.
 
-//PICTURE OF MEMORY OWNERSHIP
+```rust
+fn my_fn() {
+    let my_box = Box::new(1234);    // acquire
+    println!("{}", my_box);         // use
+                                    // delete my_box, automatically release
+}
+```
 
 ### Recursive destruction
-Ownership is recursive, so if one structure stores another by value, it gains ownership of the latter and all of its sub-structures. This also means, that when container is destroyed, it must recursively destroy all its content. Rust does it out of the box. All structures have defined destructor, which iterates through all fields and destroys them first. Structure author can add own steps during destruction, for example close DB connection when writing client, but fields still will be destroyed one by one after that. The default behavior is just right in vast majority of cases, so structures rarely have destructors defined and no mater if they do or don't, they are all safe from leaking memory.
+Ownership is recursive, so if one structure stores another by value, it gains ownership of the latter and all of its sub-structures. This also means, that when container is destroyed, it must recursively destroy all its content. Rust does it out of the box. All structures have defined destructor, which iterates through all fields and destroys them first. Structure author can add own steps during destruction, for example close DB connection when writing client, but fields still will be destroyed one by one after that. The default behavior is just right in vast majority of cases, so structures rarely have destructors defined, but no mater if they do or don't, they are all safe from leaking memory.
 
-//PICTURE OF RECURSIVE DROP
+```rust
+struct MyStruct {                       // structure definition
+    my_box: Box<u32>,                   // it has only 1 field, a Box keeping integer on heap
+}
+
+fn my_fn() {
+    let my_struct = MyStruct {          // create instance of structure
+        my_box: Box::new(1234),         // acquire memory
+    };
+    println!("{}", my_struct.my_box);   // use
+                                        // delete my_struct, which deletes my_box, which releases memory
+}
+```
 
 ### Tying heap with stack
 Rust's ownership model brings a powerful feature: complex heap management is reduced to simple stack management. Programmer doesn't have to worry about allocating and releasing, it's all reduced to working with local variables. Even if structures are deeply nested with many steps of references to heap memory, there always is a single root structure on stack, which will be automatically destroyed when program stops caring about it.
 
-//PICTURE OF COMPLEX STRUCTURES
-
 ## Lifetimes
-Unfortunately it's not convenient to write programs, where accessing data requires owning it. Rust has normal, not smart references, which make this possible. When such reference is created, it's said, that the value is borrowed. Borrowing creates a two-way relationship: the reference must have lifetime no longer than the value, but the value must not be moved during reference's lifetime. If any of these rules is violated, reference starts pointing at invalid memory. Rust tracks and enforces lifetimes correctness statically and rejecting unsafe configurations.
+Unfortunately it's not convenient to write programs, where accessing data requires owning it. Rust has normal, not smart, not owning references, which make this possible. When such reference is created, it's said, that the value is borrowed. Borrowing creates a two-way relationship: the reference must have lifetime no longer than the value, but the value must not be moved during reference's lifetime. If any of these rules is violated, reference starts pointing at invalid memory. Rust tracks and enforces lifetimes correctness statically and rejecting dangerous flows.
 
-//PICTURE OF LIFETIME CORRECTNESS
+```rust
+fn valid_flow() {
+    let value = "abc".to_string();  // crate value
+    let borrow = &value;            // create borrow
+    println!("{}", value);          // use value without moving it
+    println!("{}", borrow);         // use borrow
+                                    // delete borrow
+                                    // delete value, it's no longer borrowed 
+}
+```
+```rust
+fn borrow_outlives_value() -> &u32 {
+    let value = "abc".to_string();  // crate value
+    let borrow = &value;            // create borrow
+    return borrow                   // borrow is not deleted
+                                    // <COMPILE TIME FAIL> delete value, but it's still borrowed 
+}
+```
+```rust
+fn value_moved_during_borrow_lifetime() {
+    let value = "abc".to_string();  // crate value
+    let borrow = &value;            // create borrow
+    let my_box = Box::new(value);   // <COMPILE TIME FAIL> move of value while borrowed
+}
+```
 
 ### Recursive borrowing
 Structures can never outlive any of their fields. If one of them happens to be a reference, the whole structure instance must be proven to be destroyed before the referenced value. If there is a reference to structure with lifetime constraint, the reference itself must live no longer than the structure. This relation can be nested and tightened any number of times as long as the compiler can prove it safe. When compiler can't guess right relations, they can be explicitly defined with simple grammar.
 
-//PICTURE OF NESTED STRUCTS
+```rust
+fn nested_borrow_outlives_value() {
+    let value = "abc".to_string();  // crate value
+    let borrow = &value;            // create borrow with lifetime of value
+    let my_box = Box::new(borrow);  // create my_box with lifetime of borrow, which is lifetime of value
+    return my_box                   // my_box is not deleted, which makes borrow not deleted
+                                    // <COMPILE TIME FAIL> value is deleted, which makes borrow outlive it
+}
+```
 
 ## Bending the rules
 It would be naive to think, that every system can be expressed in code with that restrictive, statically proven safety. In vast majority of cases it can be done with no effort, but sometimes the rules must be bent and Rust provides tools for doing that. 
