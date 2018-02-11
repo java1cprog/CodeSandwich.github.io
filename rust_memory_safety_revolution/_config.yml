@@ -1,5 +1,0 @@
-name: CodeSandwich
-markdown: kramdown
-theme: jekyll-theme-slate
-title: Rust memory safety revolution
-description: why, what and how for complete beginners
