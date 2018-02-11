@@ -1,6 +1,6 @@
 ---
-title: Rust memory safety revolution
-description: why, what and how for complete beginners
+site.title: Rust memory safety revolution
+site.description: why, what and how for complete beginners
 ---
 # Introduction
 Rust is a young programming language bringing new quality to code. You might have heard about it being fast, secure or easy to implement concurrency with. This introduction is focused on the most important, core feature of Rust: memory management. This system is the main language innovation and most of its unique features are direct consequences of this design.
