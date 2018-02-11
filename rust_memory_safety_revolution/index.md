@@ -247,5 +247,6 @@ Rust's safety guarantees become impossible to apply when going sufficiently low 
 # Reality
 This system looks good on paper, it's designed by smart people using academic research of other smart people, but is it really useful? Yes, it is. Most of the time it only forces sensible and safe design with explicit relations between elements. After all Rust was designed in parallel with Servo, a future engine of Firefox web browser. From it's very beginning it wasn't only theoretically fine, but also proven usable in real, complex software development. After over a year of commercial programming in Rust I can confirm myself, that Rust's rules are not burden, but great help in architecture and stability guarantee. I honestly believe, that this language is the future, I can't recommend it more.
 
-![Meow!](internet_kitty.png)
-Obligatory cat picture
+| ![Meow!](internet_kitty.png) |
+|:-:|
+| Obligatory cat picture |
