@@ -79,31 +79,33 @@ main {
 The heap management problem is very old and programmers invented many tools to mitigate it. There are two main ways, both proven useful, but each of them severely flawed.
 
 ## Garbage collector
-This is the easy way. The program gets special mechanism detecting moment, from which given memory chunk will never be used, so it can be safely released. This prevents leaking, using after freeing and double freeing. The easiest method of proving that memory will never be used again is proving that it's not reachable. Memory is said to be reachable when program can obtain its address without guessing. It means that it's stored somewhere on stack, in a static variable or in place on heap, which itself is reachable.
-
-```
-STACK   
+This is the easy way. The program gets special mechanism detecting moment, from which given memory chunk will never be used, so it can be safely released. This prevents leaking, using after freeing and double freeing. The easiest method of proving that memory will never be used again is proving that it's not reachable. Memory is said to be reachable when program stores its address somewhere on stack, in a static variable or in place on heap, which itself is reachable.
+```  
 main {
-    A = allocate()  -> A
-}
-HEAP
-A -> {              <= reachable
-    AA = 1
-    AB = allocate()
-}
+    A = allocate() ──────┐
+}                        │
+                         │
+                         ▼
+╔══ HEAP ALLOCATED ════════╗
+║ AA = "reachable"         ║
+║ AB = allocate() ───────┐ ║
+╚════════════════════════│═╝
+                         │
+                         ▼
+╔══ HEAP ALLOCATED ════════╗
+║ ABA = "also reachable"   ║
+╚══════════════════════════╝
 
-AB -> {             <= reachable
-    ABA = 3
-}
 
--> {                <= unreachable
-    BA = 4
-    BB = allocate
-}
-
-BB -> {             <= unreachable
-    BBA = 4
-}
+╔══ HEAP ALLOCATED ════════╗
+║ BA = "unreachable"       ║
+║ BB = allocate() ───────┐ ║
+╚════════════════════════│═╝
+                         │
+                         ▼
+╔══ HEAP ALLOCATED ════════╗
+║ BBA = "also unreachable" ║
+╚══════════════════════════╝
 ```
 
 There are numerous smart strategies of checking reachability, but they all generate a significant overhead. For example reference counters increase memory usage and add overhead for each heap access. On the other hand tracing garbage collectors allow free access, but introduce heavy memory reachability analysis, which can either be constantly running in background or it can completely stop program execution for clean-up. No matter what, garbage collectors add extra work for applications and increase their memory usage.
