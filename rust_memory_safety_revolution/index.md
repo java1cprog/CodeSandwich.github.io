@@ -5,7 +5,7 @@ description: why, what and how for complete beginners
 # Introduction
 Rust is a young programming language bringing new quality to code. You might have heard about it being fast, secure or easy to implement concurrency with. This introduction is focused on the most important, core feature of Rust: memory management. This system is one of the main language innovations and many of its unique features are direct consequences of this design.
 
-## Who is this written for and what are the goals
+## Who is this written for
 This introduction is written for people, who are programmers, but don't know Rust or are at the very beginning of learning it. It's easier to understand for readers who know C, C++ or other language with manually managed memory as well as some with garbage collector. It's a high-level introduction intended to present core Rust concepts and encourage further learning. It's not a tutorial, there is no `Hello Rust` in the end.
 
 # Memory management
@@ -127,7 +127,7 @@ main {
 
 do_stuff(B) {
     do_more_stuff(B)    // use
-                        // do not release, pointer does not own allocation
+                        // don't release, pointer doesn't own allocation
                         // delete pointer
 }
 ```
@@ -195,7 +195,7 @@ fn valid_flow() {
     println!("{}", value);          // use value without moving it
     println!("{}", borrow);         // use borrow
                                     // delete borrow
-                                    // delete value,
+                                    // delete value safely, because
                                     // it's no longer borrowed 
 }
 ```
@@ -248,3 +248,4 @@ Rust's safety guarantees become impossible to apply when going sufficiently low 
 This system looks good on paper, it's designed by smart people using academic research of other smart people, but is it really useful? Yes, it is. Most of the time it only forces sensible and safe design with explicit relations between elements. After all Rust was designed in parallel with Servo, a future engine of Firefox web browser. From it's very beginning it wasn't only theoretically fine, but also proven usable in real, complex software development. After over a year of commercial programming in Rust I can confirm myself, that Rust's rules are not burden, but great help in architecture and stability guarantee. I honestly believe, that this language is the future, I can't recommend it more.
 
 ![Meow!](internet_kitty.png)
+Obligatory cat picture
