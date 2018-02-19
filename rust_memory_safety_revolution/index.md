@@ -84,27 +84,24 @@ This is the easy way. The program gets special mechanism detecting moment, from 
 ```  
 main {
    ...
-   A ───<points at>─────┐
-   ...                  |
-}                       │
-                        │
-                        ▼
-╔══ HEAP ALLOCATED ═══════╗
-║ AA = "reachable"        ║
-║ AB ────<points at>────┐ ║
-╚═══════════════════════│═╝
-                        │
-                        ▼
+   A = <pointer to>──────┐
+   ...                   |
+}                        │
+                         ▼
+╔══ HEAP ALLOCATED ════════╗
+║ AA = "reachable"         ║
+║ AB = <pointer to>──────┐ ║
+╚════════════════════════│═╝
+                         ▼
 ╔══ HEAP ALLOCATED ════════╗
 ║ ABA = "also reachable"   ║
 ╚══════════════════════════╝
 
-
-╔══ HEAP ALLOCATED ═══════╗
-║ BA = "unreachable"      ║
-║ BB ────<points at>────┐ ║
-╚═══════════════════════│═╝
-                        ▼
+╔══ HEAP ALLOCATED ════════╗
+║ BA = "unreachable"       ║
+║ BB = <pointer to>──────┐ ║
+╚════════════════════════│═╝
+                         ▼
 ╔══ HEAP ALLOCATED ════════╗
 ║ BBA = "also unreachable" ║
 ╚══════════════════════════╝
