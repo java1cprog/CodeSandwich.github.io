@@ -83,27 +83,28 @@ The heap management problem is very old and programmers invented many tools to m
 This is the easy way. The program gets special mechanism detecting moment, from which given memory chunk will never be used, so it can be safely released. This prevents leaking, using after freeing and double freeing. The easiest method of proving that memory will never be used again is proving that it's not reachable. Memory is said to be reachable when program stores its address somewhere on stack, in a static variable or in place on heap, which itself is reachable, so it can be obtained without guessing.
 ```  
 main {
-    A = allocate() ──────┐
-}                        │
-                         │
-                         ▼
-╔══ HEAP ALLOCATED ════════╗
-║ AA = "reachable"         ║
-║ AB = allocate() ───────┐ ║
-╚════════════════════════│═╝
-                         │
-                         ▼
+   ...
+   A ───<points at>─────┐
+   ...                  |
+}                       │
+                        │
+                        ▼
+╔══ HEAP ALLOCATED ═══════╗
+║ AA = "reachable"        ║
+║ AB ────<points at>────┐ ║
+╚═══════════════════════│═╝
+                        │
+                        ▼
 ╔══ HEAP ALLOCATED ════════╗
 ║ ABA = "also reachable"   ║
 ╚══════════════════════════╝
 
 
-╔══ HEAP ALLOCATED ════════╗
-║ BA = "unreachable"       ║
-║ BB = allocate() ───────┐ ║
-╚════════════════════════│═╝
-                         │
-                         ▼
+╔══ HEAP ALLOCATED ═══════╗
+║ BA = "unreachable"      ║
+║ BB ────<points at>────┐ ║
+╚═══════════════════════│═╝
+                        ▼
 ╔══ HEAP ALLOCATED ════════╗
 ║ BBA = "also unreachable" ║
 ╚══════════════════════════╝
