@@ -28,7 +28,7 @@ main {
 ## Heap
 The heap has more liberal story. Programmer can demand some piece of it from any point in code and then free it in any other point. It's not obviously coupled with program flow and compiler can't tell when and how should it be handled. It's programmer's duty to code it properly.
 
-The memory FIRST must be acquired, THEN used and THEN released exactly ONCE. This seems simple, but mixing it with the rest of application's flow can get tricky and violation of a single step is a catastrophy. Sometimes error will have no consequences, but at other times the application will get terminated, or even worse, its memory will silently become corrupted. This behavior is not deterministic.
+The memory FIRST must be acquired, THEN used and THEN released exactly ONCE. This seems simple, but mixing it with the rest of application's flow can get tricky and violation of a single step is catastrophic. Sometimes an error can have no consequences, but at other times the application can get terminated, or even worse, its memory can silently become corrupted. This behavior is not deterministic.
 
 ```
 main {
@@ -52,7 +52,7 @@ main {
 ```
 
 ### Use after free
-Use after free happens when memory is released, but program still tries to use it. If it was given back to the OS, trying to access it causes the dreaded segmentation fault and program is terminated immediately. Another funny part is when released memory is cached by allocator and reused on next acquisition making two random parts of code use same location.
+Use after free happens when memory is released, but program still tries to use it. If it was returned to the OS, trying to access it causes the dreaded segmentation fault and program is terminated immediately. Another funny part is when released memory is cached by allocator and reused on next acquisition making two random parts of code use same location.
 
 ```
 main {
@@ -110,7 +110,7 @@ main {
 There are numerous smart strategies of checking reachability, but they all generate a significant overhead. For example reference counters increase memory usage and add overhead for each heap access. On the other hand tracing garbage collectors allow free access, but introduce heavy memory reachability analysis, which can either be constantly running in background or it can completely stop program execution for clean-up. No matter what, garbage collectors add extra work for applications and increase their memory usage.
 
 ## Strict disciplines
-So garbage collector is a good, but heavy solution. But what can be done when its cost is unbearable or there is just no possibility of using it? Programmers have invented a special discipline, which closely followed makes proper memory management much easier. It's based on the rules of ownership and lifetimes.
+So garbage collector is a good, but resource heavy solution. But what can be done when its cost is unbearable or there is just no possibility of using it? Programmers have invented a special discipline, which closely followed makes proper memory management much easier. It's based on the rules of ownership and lifetimes.
  
 ### Ownership
 Ownership is an idea, that there can be many pointers to allocated memory, but only one of them is considered owning. When it's destroyed, it should be used to release the allocation. Non-owning pointers can be created and destroyed in any number, but they should never be used to deallocate. This makes memory management much clearer, because there is only one important pointer to follow and release. It also solves two of three heap problems: leaking and double free. The ownership may be a soft agreement in API and program flow, but some languages and libraries provide tools making execution of this policy more explicit and less error-prone. For example modern C++ provides built-in smart pointers, which explicitly represent owned pointers and implement proper behavior like deallocation on destruction.
@@ -131,7 +131,7 @@ do_stuff(B) {
 ```
 
 ### Lifetimes
-Lifetime is a span of time during program execution, when particular piece of data is valid to be used. It's a critical property when dealing with heap allocated memory pointers, which are not owning. They are safe to use as long as the owning pointer doesn't release. After that it's an error to use them, so their lifetimes are over. It's also worth noting, that any structure containing pointer with given lifetime should be considered having lifetime no longer than pointer's. This is not an easy discipline to execute, but it prevents the third heap memory problem: use after free. This complements ownership's guarantees making program fully memory safe without garbage collector overhead.
+Lifetime is a span of time during program execution, when a particular piece of data is valid to be used. It's a critical property when dealing with heap allocated memory pointers, which are not owning. They are safe to use as long as the owning pointer doesn't release memory. After that it's an error to use them, so their lifetimes are over. It's also worth noting, that any structure containing pointer with given lifetime should be considered having lifetime no longer than pointer's. This is not an easy discipline to execute, but it prevents the third heap memory problem: use after free. This complements ownership's guarantees making program fully memory safe without garbage collector overhead.
 
 ```
 main {
@@ -184,7 +184,7 @@ fn my_fn() {
 Rust's ownership model brings a powerful feature: complex heap management is reduced to simple stack management. Programmer doesn't have to worry about allocating and releasing, it's all about working with local variables. Even if structures are deeply nested with many steps of references to heap memory, there always is a single root structure on stack, which will be automatically destroyed when program stops caring about it.
 
 ## Lifetimes
-Unfortunately it's not convenient to write programs, where accessing data requires owning it. Rust offers normal, not smart, not owning references, which make this possible. When such reference is created, it's said, that the value is borrowed. Borrowing creates a two-way relationship: the reference must have lifetime no longer than the value, but the value must not be moved during reference's lifetime. If any of these rules is violated, reference starts pointing at invalid memory. Rust tracks and enforces lifetimes correctness statically and rejects dangerous flows.
+Unfortunately it's not convenient to write programs, where accessing data requires owning it. Rust offers normal, not smart, not owning references, which make access without ownership possible. When such reference is created, it's said, that the value is borrowed. Borrowing creates a two-way relationship: the reference must have lifetime no longer than the value, but the value must not be moved during reference's lifetime. If any of these rules is violated, reference starts pointing at invalid memory. Rust tracks and enforces lifetimes correctness statically and rejects dangerous flows.
 
 ```rust
 fn valid_flow() {
@@ -240,10 +240,10 @@ It would be naive to think, that every system can be expressed in code with that
 Standard library provides some wrappers pushing ownership and borrowing check to runtime. This calms down validity checker and gives flexibility with little runtime overhead. For example Rc is a box (allocation with smart pointer) with no owner. It's a garbage collected memory with reference counter, which is destroyed with last reference. Rust offers more wrappers, but they are slightly outside of scope of this introduction, they push to runtime rules, which were not covered here.
 
 ### Unsafety
-Rust's safety guarantees become impossible to apply when going sufficiently low level in libraries and tooling. For example box and collections are touching memory allocations and pointers without safety guarantees, because THEY ARE safety guarantees. They can be written in Rust, because their code is explicitly marked as unsafe. It lets completely ignore safety checks, but it's very dangerous. All external C library wrappers at some level must use unsafe code as well. They define safety rules making them seamlessly integrated with the rest of code. Unsafe code is Rust's source of power, but also responsibility, it should be avoided wherever possible.
+Rust's safety guarantees become impossible to apply when going sufficiently low level in libraries and tooling. For example box and collections are touching memory allocations and pointers without safety guarantees, because THEY ARE safety guarantees. They can be written in Rust, because their code is explicitly marked as unsafe. It lets completely ignore safety checks, but it's very dangerous. All external C library wrappers at some level must use unsafe code as well. They define safety rules making them seamlessly integrated with the rest of code. Unsafe code is Rust's source of power, but it comes with great responsibility. It should be avoided wherever possible.
 
 # Reality
-This system looks good on paper, it's designed by smart people using academic research of other smart people, but is it really useful? Yes, it is. Most of the time it only forces sensible and safe design with explicit relations between elements. After all Rust was designed in parallel with Servo, a future engine of Firefox web browser. From it's very beginning it wasn't only theoretically fine, but also proven usable in real, complex software development. After over a year of commercial programming in Rust I can confirm myself, that Rust's rules are not burden, but great help in architecture and stability guarantee. I honestly believe, that this language is the future, I can't recommend it more.
+This system looks good on paper, it's designed by smart people using academic research of other smart people, but is it really useful? Yes, it is. Most of the time it only forces sensible and safe design with explicit relations between elements. After all, Rust was designed in parallel with Servo, a future engine of Firefox web browser. From it's very beginning it wasn't only theoretically fine, but also proven usable in real, complex software development. After over a year of commercial programming in Rust I can confirm myself, that Rust's rules are not a burden, but a great help in architecture and stability guarantee. I honestly believe, that this language is the future, I couldn't recommend it more.
 
 |![Meow!](internet_kitty.png)|
 |:-:|
